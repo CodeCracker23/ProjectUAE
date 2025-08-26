@@ -1,13 +1,10 @@
 from fastapi.testclient import TestClient
 try:
-    from app.main import app  # if package installed / higher-level run
-except ModuleNotFoundError:  # fallback when running inside app directory
+    from app.main import app
+except ModuleNotFoundError:
     import sys, pathlib
     sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-    from main import app
-    from main import app
-import io
-import re
+    from main import app  # type: ignore
 
 client = TestClient(app)
 
