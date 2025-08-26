@@ -1,0 +1,10 @@
+fastapi==0.111.0
+uvicorn==0.30.1
+fastapi
+uvicorn[standard]
+boto3
+python-multipart
+jinja2
+pydantic
+pytest
+httpx

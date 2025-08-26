@@ -1,0 +1,96 @@
+{{- if .Values.clusterAutoscaler.enabled }}
+{{- $saName := default "cluster-autoscaler" .Values.clusterAutoscaler.serviceAccount.name }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $saName }}
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+{{- with .Values.clusterAutoscaler.serviceAccount.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-autoscaler
+rules:
+  - apiGroups: [""]
+    resources: ["endpoints","events","pods","pods/eviction","services","nodes","limitranges","persistentvolumeclaims","persistentvolumes","replicationcontrollers","resourcequotas"]
+    verbs: ["create","get","list","watch","update","patch"]
+  - apiGroups: ["apps"]
+    resources: ["daemonsets","replicasets","statefulsets","deployments"]
+    verbs: ["get","list","watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create","get","list","watch","update","patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses","csinodes","csidrivers","csistoragecapacities"]
+    verbs: ["get","list","watch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create","list","watch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["cluster-autoscaler-status","cluster-autoscaler-priority-expander"]
+    verbs: ["delete","get","update","patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: {{ $saName }}
+    namespace: kube-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+spec:
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+    spec:
+      serviceAccountName: {{ $saName }}
+      containers:
+        - name: cluster-autoscaler
+          image: {{ .Values.clusterAutoscaler.image.repository }}:{{ .Values.clusterAutoscaler.image.tag }}
+          imagePullPolicy: {{ .Values.clusterAutoscaler.image.pullPolicy }}
+          command:
+            - ./cluster-autoscaler
+            - --cloud-provider=aws
+            - --cluster-name={{ .Values.clusterName }}
+            - --balance-similar-node-groups
+            - --skip-nodes-with-system-pods=false
+            - --skip-nodes-with-local-storage=false
+            - --scan-interval=10s
+            - --expander=least-waste
+            - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/{{ .Values.clusterName }}
+{{- range $k, $v := .Values.clusterAutoscaler.extraArgs }}
+            - --{{ $k }}={{ $v }}
+{{- end }}
+          env:
+            - name: AWS_REGION
+              value: {{ .Values.env.AWS_REGION | quote }}
+          resources:
+{{ toYaml .Values.clusterAutoscaler.resources | indent 12 }}
+{{- end }}

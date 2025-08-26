@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "replicaCount": {"type": "integer", "minimum": 1},
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": {"type": "string"},
+        "tag": {"type": ["string", "null"]},
+        "pullPolicy": {"type": "string"}
+      },
+      "required": ["repository"]
+    },
+    "autoscaling": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "minReplicas": {"type": "integer", "minimum": 1},
+        "maxReplicas": {"type": "integer", "minimum": 1},
+        "targetCPUUtilizationPercentage": {"type": "integer", "minimum": 1}
+      },
+      "required": ["enabled"]
+    },
+    "probes": {
+      "type": "object",
+      "properties": {
+        "readiness": {"type": "object"},
+        "liveness": {"type": "object"}
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "mountPath": {"type": "string"},
+        "size": {"type": "string"}
+      },
+      "required": ["enabled"]
+    },
+    "clusterAutoscaler": {"type": "object"},
+    "env": {"type": "object"}
+  },
+  "required": ["image", "replicaCount"]
+}

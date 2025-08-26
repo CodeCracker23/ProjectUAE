@@ -1,0 +1,64 @@
+replicaCount: 1
+image:
+  repository: mrashidoner/soh-processor
+  tag: latest
+  pullPolicy: IfNotPresent
+nginx:
+  image: nginx:1.27-alpine
+service:
+  type: ClusterIP
+  port: 80
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 60
+env:
+  S3_BUCKET: soh-files-bucket
+  AWS_REGION: us-east-1
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+clusterName: soh-eks
+
+clusterAutoscaler:
+  enabled: true
+  image:
+    repository: registry.k8s.io/autoscaling/cluster-autoscaler
+    tag: v1.29.0
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+  extraArgs: {}
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+
+probes:
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 3
+    periodSeconds: 10
+    failureThreshold: 3
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 10
+    periodSeconds: 20
+    failureThreshold: 3
+
+persistence:
+  enabled: false
+  mountPath: /app/data
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  storageClass: ""
+  existingClaim: ""

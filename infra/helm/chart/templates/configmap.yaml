@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "soh-processor.fullname" . }}-config
+  labels:
+    app: {{ include "soh-processor.name" . }}
+data:
+  nginx.conf: |
+    events {}
+    http {
+      server {
+        listen 80;
+        location /static/ {
+          alias /usr/share/nginx/html/static/;
+        }
+        location /data/ {
+          alias /usr/share/nginx/html/data/;
+          autoindex on;
+        }
+        location / {
+            proxy_pass http://127.0.0.1:8000;
+        }
+      }
+    }

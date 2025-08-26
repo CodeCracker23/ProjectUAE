@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+.env
+
+# Data
+app/data/
+
+# IDE
+.vscode/
+.idea/
+
+# Terraform
+*.tfstate*
+.terraform/

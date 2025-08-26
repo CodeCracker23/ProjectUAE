@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "soh-processor.fullname" . }}
+  labels:
+    app: {{ include "soh-processor.name" . }}
+    chart: {{ include "soh-processor.chart" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "soh-processor.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "soh-processor.name" . }}
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: 8000
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: 8000
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          env:
+            - name: S3_BUCKET
+              value: {{ .Values.env.S3_BUCKET | quote }}
+            - name: AWS_REGION
+              value: {{ .Values.env.AWS_REGION | quote }}
+          envFrom:
+            - secretRef:
+                name: {{ include "soh-processor.fullname" . }}-secret
+          volumeMounts:
+            - name: shared-data
+              mountPath: {{ default "/app/data" .Values.persistence.mountPath }}
+        - name: nginx
+          image: {{ .Values.nginx.image }}
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: shared-data
+              mountPath: /usr/share/nginx/html/data
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          # Simple config to serve static and shared data
+          # In production you'd use a ConfigMap for nginx.conf
+      volumes:
+{{- if .Values.persistence.enabled }}
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.existingClaim }}{{ .Values.persistence.existingClaim }}{{ else }}{{ include "soh-processor.fullname" . }}-data{{ end }}
+{{- else }}
+        - name: shared-data
+          emptyDir: {}
+{{- end }}
+        - name: nginx-config
+          configMap:
+            name: {{ include "soh-processor.fullname" . }}-config

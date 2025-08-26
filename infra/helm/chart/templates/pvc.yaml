@@ -1,0 +1,19 @@
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "soh-processor.fullname" . }}-data
+  labels:
+    app: {{ include "soh-processor.name" . }}
+spec:
+  accessModes:
+{{- range .Values.persistence.accessModes }}
+    - {{ . }}
+{{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass | quote }}
+  {{- end }}
+{{- end }}
