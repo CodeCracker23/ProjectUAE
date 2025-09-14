@@ -24,7 +24,7 @@ affinity: {}
 clusterName: soh-eks
 
 clusterAutoscaler:
-  enabled: true
+  enabled: false
   image:
     repository: registry.k8s.io/autoscaling/cluster-autoscaler
     tag: v1.29.0
@@ -55,7 +55,7 @@ probes:
     failureThreshold: 3
 
 persistence:
-  enabled: false
+  enabled: true
   mountPath: /app/data
   accessModes:
     - ReadWriteOnce
