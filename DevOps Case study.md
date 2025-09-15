@@ -27,3 +27,13 @@ Solution:
 * Git history with meaningful process messages
 * Automated test
 * CI/CD pipelines
+
+# Open http://127.0.0.1:8000
+kubectl port-forward svc/soh-processor 8000:80 
+Works for any service type, even ClusterIP
+kubectl rollout restart deploy soh-processor will see processed file are protected. 
+# Opens http://127.0.0.1:51234 (random NodePort)
+minikube service soh-processor (your-service-name)
+It automatically figures out the right node IP + port and gives you a ready-to-use URL.
+when you delete the pod, it will recreate without terminating the exposed connection
+Doesn’t talk directly to the Pod — it talks to the Kubernetes Service.
